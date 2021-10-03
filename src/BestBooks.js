@@ -7,6 +7,7 @@ import { withAuth0 } from "@auth0/auth0-react";
 import Books from './components/Books.js'
 import AddBookModal from './components/AddBookModal';
 import Button from 'react-bootstrap/Button'
+import UpdateBookModal from './components/UpdateBookModal';
 
 
 class MyFavoriteBooks extends React.Component {
@@ -16,25 +17,37 @@ class MyFavoriteBooks extends React.Component {
     this.state = {
       bookData: [],
       email: this.props.auth0.user.email,
-      showModal: false
+      showModal: false,
+      showUpdateForm: false,
+      bookInfoUpdate: {}
     }
   }
 
   handelShow = () => {
     this.setState({
-      showModal: true
+      showModal: true,
+    })
+  }
+
+  handelShowUpdateForm = async (bookInfo) => {
+    console.log(bookInfo)
+    await this.setState({
+      showUpdateForm: true,
+      bookInfoUpdate: bookInfo
+
     })
   }
 
   handelClose = () => {
     this.setState({
-      showModal: false
+      showModal: false,
+      showUpdateForm: false,
     })
   }
 
   componentDidMount = async () => {
     // console.log('mount function');
-    let url = `http://localhost:3004/books?email=${this.state.email}`
+    let url = `${process.env.REACT_APP_SERVER}/books?email=${this.state.email}`
     let books = await axios.get(url);
     this.setState({
       bookData: books.data
@@ -57,19 +70,37 @@ class MyFavoriteBooks extends React.Component {
       title: event.target.title.value,
       description: event.target.description.value,
     }
-    let newBooksData = await axios.post(`http://localhost:3004/addbook`, bookFormInfo);
+    let newBooksData = await axios.post(`${process.env.REACT_APP_SERVER}/addbook`, bookFormInfo);
 
     this.setState({
       bookData: newBooksData.data
     });
   }
 
-  deleteBook = async (bookId) =>{
+  deleteBook = async (bookId) => {
     // deleting the book id
-    let newBooksData = await axios.delete(`http://localhost:3004/deleteBook?email=${this.state.email}&bookId=${bookId}`);
+    let newBooksData = await axios.delete(`${process.env.REACT_APP_SERVER}/deleteBook?email=${this.state.email}&bookId=${bookId}`);
     this.setState({
       bookData: newBooksData.data
     });
+  }
+
+  updateBook = async (event) => {
+    event.preventDefault();
+
+    let BookFormInfo = {
+      email: this.state.email,
+      title: event.target.title.value,
+      description: event.target.description.value,
+      bookId: this.state.bookInfoUpdate._id
+    }
+
+    let newBooksData = await axios.put(`${process.env.REACT_APP_SERVER}/updateBook`, BookFormInfo);
+
+    this.setState({
+      bookData: newBooksData.data
+    });
+
   }
 
   render() {
@@ -84,24 +115,29 @@ class MyFavoriteBooks extends React.Component {
         </Jumbotron>
 
 
-        <Button variant="primary" onClick={this.handelShow} style={{ margin: '20px'}}>Add Book</Button>
+        <Button variant="primary" onClick={this.handelShow} style={{ margin: '20px' }}>Add Book</Button>
         {this.state.showModal &&
-        <>
-      <AddBookModal addBook={this.addBook} show={this.state.showModal} handelShow={this.handelShow} handelClose={this.handelClose}/>
-        </>
+          <>
+            <AddBookModal addBook={this.addBook} show={this.state.showModal} handelShow={this.handelShow} handelClose={this.handelClose} />
+          </>
 
-       }
-
+        }
 
         {this.state.bookData.length > 0 &&
           <>
             {this.state.bookData.map((element, index) => {
               return (
-                <Books key={index} deleteBook={this.deleteBook} id={element._id} title={element.title} description={element.description} email={element.email} />
+                <Books key={index} deleteBook={this.deleteBook} element={element} handelShowUpdateForm={this.handelShowUpdateForm} />
               )
             })}
           </>
         }
+
+
+        {this.state.showUpdateForm &&
+          <UpdateBookModal show={this.state.showUpdateForm} handelClose={this.handelClose} bookInfoUpdate={this.state.bookInfoUpdate} updateBook={this.updateBook} />
+        }
+
       </>
     )
   }

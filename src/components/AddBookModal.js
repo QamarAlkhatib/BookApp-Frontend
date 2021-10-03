@@ -18,7 +18,7 @@ class AddBook extends React.Component {
                                 <Form.Control type="text" name='description' placeholder='Enter Book description' />
                             </Form.Group>
                             <Button variant="primary" type="submit" value="Add Book">
-                                Submit
+                                Add
                             </Button>
                         </Form>
                     </Modal.Body>
